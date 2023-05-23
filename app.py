@@ -1,73 +1,142 @@
 import subprocess
-from tqdm import tqdm
 import re
+from tqdm import tqdm
 import sys
 from PySide2.QtWidgets import QApplication, QMainWindow, QProgressBar, QPushButton, QLabel, QLineEdit, QVBoxLayout, QWidget
 from PySide2 import QtWidgets, QtCore
 from controladores.main_ui import Ui_Form
+from PySide2.QtWidgets import QApplication, QMainWindow, QListView, QVBoxLayout, QWidget, QAbstractItemView, QListWidgetItem, QListWidget
+from PySide2.QtCore import Qt, QMimeData, QUrl
+import time
 
 
-# # Ejemplo de uso
-# archivo_nk = r"C:\Users\sergi\Desktop\pruebas\pruebas.nk"
-# indice_nodo_write = 1
-# renderizar_nodo_write(archivo_nk, indice_nodo_write)
 
+##################################################################################
+#Clases de la interfaz
+##################################################################################
 
-class MainWindow(QMainWindow ,Ui_Form):
+class MainWindow(QMainWindow, Ui_Form):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        
+        #Setear cosas
+        self.render_button.clicked.connect(self.renderizar)
+        self.render_in_progress = False
+        
+        #Crear listam y a;adirla al layout
+        self.list_widget = FileListWidget(self)
+        self.gridLayout.addWidget(self.list_widget)
 
-        self.render_button.clicked.connect(self.rederizar)
 
-    def rederizar(self):
+    def renderizar(self):
+        if self.render_in_progress:
+            return
         self.write = self.input_write.text()
-        self.script = self.input_script.text()
-        print(self.script, self.write, 'hola')
-
-        self.thread = RenderThread()
-        self.thread.progress.connect(self.update_progress)
-        self.thread.start()
-        self.thread.renderizar_nodo_write(self.script, self.write)
-
+        for index in range(self.list_widget.count()):
+            item = self.list_widget.item(index)
+            self.script = item.text()
+            self.thread = RenderThread()
+            self.thread.progress.connect(self.update_progress)
+            self.thread.finished.connect(self.rendering_finished)
+            self.thread.start_rendering(self.script, self.write)
+            print(self.script, 'renderizar')
+            self.render_button.setEnabled(False)  # Deshabilitar el botón de renderizado
+            self.render_in_progress = True  # Establecer el indicador de renderizado en progreso
+            self.proceso.setText("Comenzando")
 
     def update_progress(self, progress):
-        self.progress_bar.setValue(progress)
+        self.progressBar.setValue(progress)
 
-        
+    def rendering_finished(self):
+        # Realizar acciones adicionales después de que finalice el renderizado
+        self.proceso.setText("Render finalizado")
+        self.render_button.setEnabled(True)  # Habilitar el botón de renderizado
+        self.render_in_progress = False  # Establecer el indicador de renderizado en progreso en False
+
+
+##################################################################################
+
 
 class RenderThread(QtCore.QThread):
     progress = QtCore.Signal(int)
+    finished = QtCore.Signal()
+
     def __init__(self):
         super().__init__()
-            
-    def renderizar_nodo_write(self, nk_file, write_node_index=1):
-        nuke_executable = r"C:\Program Files\Nuke14.0v4\Nuke14.0"  # Ruta al ejecutable de Nuke
-        nk_file = f"{nk_file}"
-        nk_file = r"" + nk_file
-        command = [nuke_executable, "-X", f"Write{write_node_index}", nk_file]
-        
-        with tqdm(total=0, ncols=80, bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}') as pbar:
-            proceso = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-            for linea in proceso.stdout:
-                # Analizar la salida del proceso para detectar el progreso y actualizar la barra de progreso
-                # Aquí puedes personalizar cómo se actualiza el progreso según la salida de Nuke
+
+    def start_rendering(self, nk_file, write_node_index=1):
+        self.nk_file = nk_file
+        self.write_node_index = write_node_index
+        self.nuke_executable = r"C:\Program Files\Nuke14.0v4\Nuke14.0"  # Ruta al ejecutable de Nuke
+        print(self.nk_file,'start rendering')
+        self.start()
+
+
+    def run(self):
+        command = [self.nuke_executable, "-X", f"Write{self.write_node_index}", self.nk_file]
+        print(self.nk_file, 'run')
+        with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              universal_newlines=True) as proceso:
+            print('before forloop')
+            print(proceso)
+            print(proceso.stdout)
+
+            while True:
+                linea = proceso.stdout.readline()
+                if not linea:
+                    break
+                print(linea)
                 if "Frame" in linea:
                     patron = r"\((\d+) of (\d+)\)"
                     resultado = re.search(patron, linea)
                     progreso_actual = int(resultado.group(1))
                     frame_range = int(resultado.group(2))
-                    if pbar.total == 0:
-                        pbar.reset(total=frame_range)
-                    pbar.update(progreso_actual - pbar.n)
-                    porcentaje = (progreso_actual/frame_range)*100
+                    porcentaje = (progreso_actual / frame_range) * 100
                     self.progress.emit(porcentaje)
-            proceso.wait()
 
 
-    def terminate(self) -> None:
-        return super().terminate()
-        
+            # for linea in proceso.stdout:
+            #     if "Frame" in linea:
+            #         patron = r"\((\d+) of (\d+)\)"
+            #         resultado = re.search(patron, linea)
+            #         progreso_actual = int(resultado.group(1))
+            #         frame_range = int(resultado.group(2))
+            #         porcentaje = (progreso_actual / frame_range) * 100
+            #         self.progress.emit(porcentaje)
+            #         print(self.nk_file, 'subproceso')
+
+        self.finished.emit()
+
+      
+##################################################################################
+  
+
+        #Crear una clase de lista para manejar sus funciones
+class FileListWidget(QListWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.setDragEnabled(True)
+        self.setDragDropMode(QAbstractItemView.InternalMove)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            for url in urls:
+                file_path = url.toLocalFile()
+                item = QListWidgetItem(file_path)
+                self.addItem(item)
+
+
+##################################################################################
+#ejecutable
+##################################################################################
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
