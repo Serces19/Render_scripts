@@ -4,7 +4,7 @@ from tqdm import tqdm
 import sys
 from PySide2.QtWidgets import QApplication, QMainWindow, QProgressBar, QPushButton, QLabel, QLineEdit, QVBoxLayout, QWidget
 from PySide2 import QtWidgets, QtCore
-from controladores.main_ui import Ui_Form
+from controladores.main_ui import Ui_Nuke_Render
 from PySide2.QtWidgets import QApplication, QMainWindow, QListView, QVBoxLayout, QWidget, QAbstractItemView, QListWidgetItem, QListWidget
 from PySide2.QtCore import Qt, QMimeData, QUrl
 import time
@@ -14,7 +14,7 @@ import time
 #Clases de la interfaz
 ##################################################################################
 
-class MainWindow(QMainWindow, Ui_Form):
+class Ui_Nuke_Render(QMainWindow, Ui_Nuke_Render):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -50,39 +50,39 @@ class MainWindow(QMainWindow, Ui_Form):
 
             if self.render_queue:
                 print('dentro el ciclo for el queue es: ', self.render_queue)
-                self.start_render()  # Iniciar el renderizado del primer script en la cola
+                self.start_next_render()  # Iniciar el renderizado del primer script en la cola
 
 
 
-    def start_render(self):
-        print('start render', self.render_queue)
-        if self.render_queue:
-            print('desde el if del star render')
-            script = self.render_queue.pop(0)  # Obtener el primer script de la cola
-            self.thread = RenderThread()
-            self.thread.progress.connect(self.update_progress)
-            self.thread.finished.connect(self.rendering_finished)
-            self.thread.start_rendering(script, self.write)
-            self.render_button.setEnabled(False)  # Deshabilitar el botón de renderizado
-            self.render_in_progress = True  # Establecer el indicador de renderizado en progreso
-            self.proceso.setText("Comenzando")
-        else:
-            self.rendering_finished
-
-
-
-
-    # def start_next_render(self):
+    # def start_render(self):
+    #     print('start render', self.render_queue)
     #     if self.render_queue:
+    #         print('desde el if del star render')
     #         script = self.render_queue.pop(0)  # Obtener el primer script de la cola
     #         self.thread = RenderThread()
     #         self.thread.progress.connect(self.update_progress)
     #         self.thread.finished.connect(self.rendering_finished)
-    #         self.thread.render_finished.connect(self.start_next_render)  # Conectar la señal render_finished al método start_next_render
     #         self.thread.start_rendering(script, self.write)
     #         self.render_button.setEnabled(False)  # Deshabilitar el botón de renderizado
     #         self.render_in_progress = True  # Establecer el indicador de renderizado en progreso
     #         self.proceso.setText("Comenzando")
+    #     else:
+    #         self.rendering_finished
+
+
+
+
+    def start_next_render(self):
+        if self.render_queue:
+            script = self.render_queue.pop(0)  # Obtener el primer script de la cola
+            self.thread = RenderThread()
+            self.thread.progress.connect(self.update_progress)
+            self.thread.finished.connect(self.rendering_finished)
+            self.thread.render_finished.connect(self.start_next_render)  # Conectar la señal render_finished al método start_next_render
+            self.thread.start_rendering(script, self.write)
+            self.render_button.setEnabled(False)  # Deshabilitar el botón de renderizado
+            self.render_in_progress = True  # Establecer el indicador de renderizado en progreso
+            self.proceso.setText("Comenzando")
 
 
 
