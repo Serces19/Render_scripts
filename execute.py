@@ -16,7 +16,7 @@ print('last frame:', frame_range)
 
 ######################################
 
-node_name = "Write_loco"
+node_name = "Write_version"
 if nuke.exists(node_name):
     write_node = nuke.toNode(node_name)
     nuke.execute(write_node)
