@@ -3,6 +3,7 @@ import sys
 import time
 from PySide2.QtWidgets import *
 from PySide2 import QtCore
+from PySide2.QtCore import QTimer, QTime
 
 from master_ui import *
 
@@ -37,7 +38,7 @@ class MainWindows(MainWindow):
             item = self.lista.item(index)
             self.script = item.text()
             self.script = '"' + self.script + '"'
-            linea = self.nuke_executable + ' -ti '+ self.script +' < ' + execute
+            linea = self.nuke_executable + ' -ti -V2 '+ self.script +' < ' + execute
             self.comando.append(linea)
 
         #Se inicia la clase RenderThread para que la interfaz no se pare mientras se renderiza
@@ -45,8 +46,10 @@ class MainWindows(MainWindow):
         
         #Se conectan las señales y lo que ejecutaran  
         self.thread.progress.connect(self.update_progress)
+        self.thread.descripcion.connect(self.update_descripcion)
         self.thread.current_shot.connect(self.update_shot)
         self.thread.finished.connect(self.rendering_finished)
+        self.thread.tiempo.connect(self.update_tiempo)
 
         #Se inicia el metodo que inicia el render y se pasa el argumento
         self.thread.start_rendering(self.comando)
@@ -55,21 +58,38 @@ class MainWindows(MainWindow):
         self.render_button.setEnabled(False)  # Deshabilitar el botón de renderizado
         self.render_in_progress = True  # Establecer el indicador de renderizado en progreso
         self.status.setText("Comenzando") #Establece el texto que va debajo de la barra de progreso
+        self.progressBar.setValue(0)
+        #comienza a contar los miniutos
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_time)
+        self.timer.start(1000)  # Actualiza cada segundo (1000 ms)
+        self.start_time = QTime.currentTime()
+
 
     def update_shot(self, current_shot):
-        self.script_actual.setText(current_shot)
+        self.status.setText(f'Renderizando: {current_shot}')
 
     #Actualiza la barra de progresso durante el render
     def update_progress(self, progress):
         self.progressBar.setValue(progress)
-        self.status.setText("Renderizando")
+
+    def update_descripcion(self, descripcion):
+        self.descripcion.setText(descripcion)
+
+    def update_tiempo(self, tiempo):
+        self.tiempo.setText(f'Tiempo total de render: {tiempo}')
 
     #Se activa una vez el render haya terminado
     def rendering_finished(self):
         self.status.setText("Render finalizado")
         self.render_button.setEnabled(True)  # Habilitar el botón de renderizado
         self.render_in_progress = False  # Establecer el indicador de renderizado en progreso en False
+        self.timer.stop()
 
+    def update_time(self):
+        current_time = QTime.currentTime()
+        elapsed_seconds = self.start_time.secsTo(current_time)
+        self.tiempo2.setText(f"Segundos: {elapsed_seconds}")
 
 ##################################################################################
 
@@ -77,7 +97,9 @@ class MainWindows(MainWindow):
 class RenderThread(QtCore.QThread):
     progress = QtCore.Signal(int)
     current_shot = QtCore.Signal(str)
+    descripcion = QtCore.Signal(str)
     finished = QtCore.Signal()
+    tiempo = QtCore.Signal(int)
 
     def __init__(self):
         super().__init__()
@@ -116,12 +138,23 @@ class RenderThread(QtCore.QThread):
                         count = count + 1
                         frame_actual = count
                         porcentaje = (frame_actual / frame_range) *100
+                        porcentaje = int(porcentaje / 2)
                         self.progress.emit(porcentaje)
+                        actual = linea.split()
+                        actual = actual[0:-3]
+                        actual = ' '.join(actual)
+                        self.descripcion.emit(actual)
 
+                    if linea.startswith('Total render time:'):
+                        self.descripcion.emit(linea)
+                    
 
-        # Cuando se llega aqui es por que el proceso de render terminó
-        end_time = time.time()
-        render_time: end_time - start_time         
+                    end_time = time.time()
+                    tiempo = end_time - start_time
+                    tiempo = int(tiempo)
+                    self.tiempo.emit(tiempo)
+                    
+        # Cuando se llega aqui es por que el proceso de render terminó       
         self.finished.emit()
 
 
