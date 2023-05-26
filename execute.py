@@ -13,10 +13,13 @@ frame_range = last_frame - first_frame
 
 print('last frame:', frame_range)
 
+# Obtener el nombre del script
+shot_name = nuke.tcl('regsub -all {_v[0-9]+} [file rootname [file tail [value root.name]]] ""')
+print('shot name:', shot_name)
 
 ######################################
-
-node_name = "Write_version"
+#Renderizar
+node_name = "Write_loco"
 if nuke.exists(node_name):
     write_node = nuke.toNode(node_name)
     nuke.execute(write_node)

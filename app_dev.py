@@ -1,11 +1,10 @@
 import subprocess
-import re
 import sys
-from PySide2.QtWidgets import QApplication, QMainWindow, QProgressBar, QPushButton, QLabel, QLineEdit, QVBoxLayout, QWidget
-from PySide2 import QtWidgets, QtCore
-from controladores.main_ui import Ui_Nuke_Render
-from PySide2.QtWidgets import QListView, QVBoxLayout, QWidget, QAbstractItemView, QListWidgetItem, QListWidget
-from PySide2.QtCore import Qt, QMimeData, QUrl
+import time
+from PySide2.QtWidgets import *
+from PySide2 import QtCore
+
+from master_ui import *
 
 
 
@@ -13,33 +12,29 @@ from PySide2.QtCore import Qt, QMimeData, QUrl
 #Clases de la interfaz
 ##################################################################################
 
-class MainWindow(QMainWindow, Ui_Nuke_Render):
+class MainWindows(MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
         
-        #Setear cosas
-        self.render_button.clicked.connect(self.renderizar)
+        #Setear el boton de render
         self.render_in_progress = False
-        
-        # #Crear lista y añadirla al layout
-        self.list_widget = FileListWidget(self)
-        self.gridLayout.addWidget(self.list_widget)
-        
+        self.render_button.clicked.connect(self.renderizar)
 
     def renderizar(self):
         #Si el render esta en progreso no se ejecuta el resto
         if self.render_in_progress:
             return
         
-        #setear el nombre del write que debera ser el mismo para todos los scripts
+        #setear el la ubicacion del archivo de nuke
         self.nuke_executable = r'"C:\Program Files\Nuke14.0v4\Nuke14.0"'
+
         self.comando = list()
         execute = 'execute.py'
         
         #Crear una lista con los archivos a renderizar
-        for index in range(self.list_widget.count()):
-            item = self.list_widget.item(index)
+        for index in range(self.lista.count()):
+            item = self.lista.item(index)
             self.script = item.text()
             self.script = '"' + self.script + '"'
             linea = self.nuke_executable + ' -ti '+ self.script +' < ' + execute
@@ -50,6 +45,7 @@ class MainWindow(QMainWindow, Ui_Nuke_Render):
         
         #Se conectan las señales y lo que ejecutaran  
         self.thread.progress.connect(self.update_progress)
+        self.thread.current_shot.connect(self.update_shot)
         self.thread.finished.connect(self.rendering_finished)
 
         #Se inicia el metodo que inicia el render y se pasa el argumento
@@ -58,16 +54,19 @@ class MainWindow(QMainWindow, Ui_Nuke_Render):
         #Se establece el status como render in progress
         self.render_button.setEnabled(False)  # Deshabilitar el botón de renderizado
         self.render_in_progress = True  # Establecer el indicador de renderizado en progreso
-        self.proceso.setText("Comenzando") #Establece el texto que va debajo de la barra de progreso
+        self.status.setText("Comenzando") #Establece el texto que va debajo de la barra de progreso
+
+    def update_shot(self, current_shot):
+        self.script_actual.setText(current_shot)
 
     #Actualiza la barra de progresso durante el render
     def update_progress(self, progress):
         self.progressBar.setValue(progress)
-        self.proceso.setText("Renderizando")
+        self.status.setText("Renderizando")
 
     #Se activa una vez el render haya terminado
     def rendering_finished(self):
-        self.proceso.setText("Render finalizado")
+        self.status.setText("Render finalizado")
         self.render_button.setEnabled(True)  # Habilitar el botón de renderizado
         self.render_in_progress = False  # Establecer el indicador de renderizado en progreso en False
 
@@ -77,6 +76,7 @@ class MainWindow(QMainWindow, Ui_Nuke_Render):
 
 class RenderThread(QtCore.QThread):
     progress = QtCore.Signal(int)
+    current_shot = QtCore.Signal(str)
     finished = QtCore.Signal()
 
     def __init__(self):
@@ -89,6 +89,7 @@ class RenderThread(QtCore.QThread):
 
     def run(self):
         print(self.command)
+        start_time = time.time()
         for comando in self.command:
             count = 0
             with subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -103,55 +104,34 @@ class RenderThread(QtCore.QThread):
                         frame_range = linea.split()
                         frame_range = frame_range[-1]
                         frame_range = int(frame_range)
-                        print(frame_range)
+
+                    if 'shot name:' in linea:
+                        shot_name = linea.split()
+                        shot_name = shot_name[-1]
+                        shot_name = str(shot_name)
+                        self.current_shot.emit(shot_name)
+                        print(shot_name)
+
                     if linea.startswith('Writing'):
                         count = count + 1
                         frame_actual = count
                         porcentaje = (frame_actual / frame_range) *100
                         self.progress.emit(porcentaje)
-                    # if "Frame" in linea:
-                    #     patron = r"\((\d+) of (\d+)\)"
-                    #     resultado = re.search(patron, linea)
-                    #     progreso_actual = int(resultado.group(1))
-                    #     frame_range = int(resultado.group(2))
-                    #     porcentaje = (progreso_actual / frame_range) * 100
-                    #     self.progress.emit(porcentaje)
 
-        # Cuando se llega aqui es por que el proceso de render terminó            
+
+        # Cuando se llega aqui es por que el proceso de render terminó
+        end_time = time.time()
+        render_time: end_time - start_time         
         self.finished.emit()
 
-      
-##################################################################################
-  
-#Crear una clase de lista para manejar las funciones de la QListWidget
-class FileListWidget(QListWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setAcceptDrops(True)
-        self.setDragEnabled(True)
-        self.setDragDropMode(QAbstractItemView.InternalMove)
 
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event):
-        if event.mimeData().hasUrls():
-            urls = event.mimeData().urls()
-            for url in urls:
-                file_path = url.toLocalFile()
-                item = QListWidgetItem(file_path)
-                self.addItem(item)
-
-
-
-##################################################################################
+#################################################################################
 #ejecutable
-##################################################################################
+#################################################################################
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = MainWindows()
     window.show()
     sys.exit(app.exec_())
 

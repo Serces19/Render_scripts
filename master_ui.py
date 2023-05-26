@@ -14,9 +14,13 @@ from PySide2.QtCore import Qt
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
+    
+    def setupUi(self, Nuke_Render):
+        if not Nuke_Render.objectName():
+            Nuke_Render.setObjectName("Nuke Render")
 
         self.setWindowTitle("Nuke render")
-        self.setGeometry(100, 100, 800, 500)  # Definir posición y tamaño de la ventana
+        self.setGeometry(100, 100, 800, 1000)  # Definir posición y tamaño de la ventana
         self.setStyleSheet(u"background-color: rgb(20, 25, 35);\n"
                                     "font: 10pt \"Poppins\";\n"
                                     "color: rgb(180, 180, 180);")        
@@ -77,9 +81,10 @@ class MainWindow(QMainWindow):
 
         #-------------------------Crear los widgets, botones, etc---------------------------
         # Crear botones y asignar colores de fondo y estilo redondeado
-        button1 = QPushButton("Botón 1")
-        button1.setStyleSheet("background-color: rgb(23, 27, 35);")
-        sub_division_layout1.addWidget(button1)
+        self.nuke_dir = QLineEdit()
+        self.nuke_dir.setPlaceholderText('Ubicacion de Nuke')
+        self.nuke_dir.setStyleSheet("background-color: rgb(25, 30, 45);")
+        sub_division_layout1.addWidget(self.nuke_dir)
 
         label_1 = QLabel("label 1")
         label_1.setAlignment(Qt.AlignCenter)
@@ -100,30 +105,46 @@ class MainWindow(QMainWindow):
         sub_division_layout5.addWidget(label_lista)
 
         # Agregar la lista
-        lista = FileListWidget(self)
-        sub_division_layout5.addWidget(lista)
+        self.lista = FileListWidget(self)
+        sub_division_layout5.addWidget(self.lista)
+        
+        # Agregar la barra de progreso
+        self.progressBar = QProgressBar()
+        self.progressBar.setObjectName("progressBar")
+        style = """
+        QProgressBar::chunk {
+            background-color: rgb(10, 80, 50);
+        }
+        """
+        self.progressBar.setStyleSheet(style)
+        self.progressBar.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        sub_division_layout5.addWidget(self.progressBar)
 
         # Agregar el boton de render
-        button5 = QPushButton("Render")
-        button5.setStyleSheet("background-color: rgb(10, 80, 50);")
-        sub_division_layout6.addWidget(button5)
+        self.render_button = QPushButton("Render")
+        self.render_button.setStyleSheet("background-color: rgb(10, 80, 50);")
+        sub_division_layout6.addWidget(self.render_button)
 
         #Agregar botones de iliminar y agregar
         add_button = QPushButton("+")
-        add_button.clicked.connect(lista.add_item)
+        add_button.clicked.connect(self.lista.add_item)
         child_sub_division_H_layout1.addWidget(add_button)
 
         remove_button = QPushButton("-")
-        remove_button.clicked.connect(lista.remove_item)
+        remove_button.clicked.connect(self.lista.remove_item)
         child_sub_division_H_layout1.addWidget(remove_button)
 
-        label_3 = QLabel("Status:")
-        label_3.setAlignment(Qt.AlignCenter)
-        sub_division_layout8.addWidget(label_3)
+        self.status = QLabel("Status:")
+        self.status.setAlignment(Qt.AlignCenter)
+        sub_division_layout8.addWidget(self.status)
 
-        label_4 = QLabel("Tiempo:")
-        label_4.setAlignment(Qt.AlignCenter)
-        sub_division_layout9.addWidget(label_4)
+        self.script_actual = QLabel("-")
+        self.script_actual.setAlignment(Qt.AlignCenter)
+        sub_division_layout8.addWidget(self.script_actual)
+
+        self.tiempo = QLabel("Tiempo:")
+        self.tiempo.setAlignment(Qt.AlignCenter)
+        sub_division_layout9.addWidget(self.tiempo)
         
 
     def center_window(self):
@@ -150,12 +171,6 @@ class FileListWidget(QListWidget):
         self.setSortingEnabled(1)
         self.setSelectionMode(QListWidget.ExtendedSelection)
         self.setDragDropMode(QAbstractItemView.InternalMove)
-
-        self.addItem("Elemento 1")
-        self.addItem("Elemento 2")
-        self.addItem("Elemento 3")
-        self.addItem("Elemento 4")
-        self.addItem("Elemento 5")
 
         self.setViewMode(QListView.ListMode)
         self.setItemDelegate(AlternatingColorDelegate())   
@@ -198,11 +213,11 @@ class AlternatingColorDelegate(QStyledItemDelegate):
 # ejecutar
 ################################################################################
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec_())
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     window = MainWindow()
+#     window.show()
+#     sys.exit(app.exec_())
 
 
 
