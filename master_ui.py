@@ -20,9 +20,9 @@ class MainWindow(QMainWindow):
             Nuke_Render.setObjectName("Nuke Render")
 
         self.setWindowTitle("Nuke render")
-        self.setGeometry(100, 100, 800, 1000)  # Definir posición y tamaño de la ventana
+        self.setGeometry(100, 100, 1000, 1000)  # Definir posición y tamaño de la ventana
         self.setStyleSheet(u"background-color: rgb(20, 25, 35);\n"
-                                    "font: 10pt \"Poppins\";\n"
+                                    "font: 9pt \"Poppins\";\n"
                                     "color: rgb(180, 180, 180);")        
         self.center_window()
 
@@ -32,6 +32,7 @@ class MainWindow(QMainWindow):
         central_widget = QWidget(self)
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
+        central_widget.setStyleSheet("QWidget { border-radius: 5px; padding: 10px; background-color: rgba(255, 255, 255, 5); }")
 
         # Crear las divisiones principales (horizontal)
         division_H_layout1 = QHBoxLayout()
@@ -75,32 +76,35 @@ class MainWindow(QMainWindow):
         # Agregar las divisiones principales al layout principal
         layout.addLayout(division_H_layout1)
         layout.addLayout(division_H_layout2)
+        spacer = QSpacerItem(0, 40, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        layout.addItem(spacer)
         layout.addLayout(division_H_layout3)
+        layout.addItem(spacer)
         layout.addLayout(division_H_layout4)
+        layout.addItem(spacer)
         layout.addLayout(division_H_layout5)
 
         #-------------------------Crear los widgets, botones, etc---------------------------
         # Crear botones y asignar colores de fondo y estilo redondeado
         self.nuke_dir = QLineEdit()
         self.nuke_dir.setPlaceholderText('Ubicacion de Nuke')
-        self.nuke_dir.setStyleSheet("background-color: rgb(25, 30, 45);")
         sub_division_layout1.addWidget(self.nuke_dir)
 
-        label_1 = QLabel("label 1")
-        label_1.setAlignment(Qt.AlignCenter)
-        sub_division_layout2.addWidget(label_1)
+        # label_1 = QLabel("label 1")
+        # label_1.setAlignment(Qt.AlignCenter)
+        # sub_division_layout2.addWidget(label_1)
 
-        button2 = QPushButton("Botón 2")
-        button2.setStyleSheet("background-color: rgb(70, 80, 90);")
-        sub_division_layout3.addWidget(button2)
+        # button2 = QPushButton("Botón 2")
+        # button2.setStyleSheet("background-color: rgb(70, 80, 90);")
+        # sub_division_layout3.addWidget(button2)
 
         
-        input_write = QLineEdit()
-        input_write.setPlaceholderText('input write')
-        input_write.setAlignment(Qt.AlignCenter)
-        sub_division_layout4.addWidget(input_write)
+        self.input_write = QLineEdit()
+        self.input_write.setPlaceholderText('input write')
+        self.input_write.setAlignment(Qt.AlignLeft)
+        sub_division_layout4.addWidget(self.input_write)
 
-        label_lista = QLabel("Scripts a renderizar:")
+        label_lista = QLabel("Arrastra los scripts a renderizar:")
         label_lista.setAlignment(Qt.AlignLeft)
         sub_division_layout5.addWidget(label_lista)
 
@@ -122,30 +126,41 @@ class MainWindow(QMainWindow):
 
         # Agregar el boton de render
         self.render_button = QPushButton("Render")
-        self.render_button.setStyleSheet("background-color: rgb(10, 80, 50);")
+        self.render_button.setStyleSheet("QPushButton { background-color: rgb(30, 120, 90); }"
+                     "QPushButton:hover { background-color: rgb(40, 130, 100); }"
+                     "QPushButton:pressed { background-color:rgb(10, 120, 120); }")
+
         sub_division_layout6.addWidget(self.render_button)
 
         #Agregar botones de iliminar y agregar
         add_button = QPushButton("+")
+        add_button.setStyleSheet("QPushButton { font-size: 18px; font-weight: bold; }")
         add_button.clicked.connect(self.lista.add_item)
         child_sub_division_H_layout1.addWidget(add_button)
 
         remove_button = QPushButton("-")
+        remove_button.setStyleSheet("QPushButton { font-size: 18px; font-weight: bold; }")
+
         remove_button.clicked.connect(self.lista.remove_item)
         child_sub_division_H_layout1.addWidget(remove_button)
 
         self.status = QLabel("Status:")
-        self.status.setAlignment(Qt.AlignCenter)
+        self.status.setAlignment(Qt.AlignLeft)
         sub_division_layout8.addWidget(self.status)
 
-        self.script_actual = QLabel("-")
-        self.script_actual.setAlignment(Qt.AlignCenter)
-        sub_division_layout8.addWidget(self.script_actual)
+        self.descripcion = QLabel("-")
+        self.descripcion.setAlignment(Qt.AlignLeft)
+        self.descripcion.setStyleSheet("font-size: 7pt; color: rgb(80, 80, 80);")
+        sub_division_layout8.addWidget(self.descripcion)
 
         self.tiempo = QLabel("Tiempo:")
         self.tiempo.setAlignment(Qt.AlignCenter)
         sub_division_layout9.addWidget(self.tiempo)
-        
+
+        self.tiempo_restante = QLabel("-")
+        self.tiempo_restante.setAlignment(Qt.AlignCenter)
+        sub_division_layout9.addWidget(self.tiempo_restante)
+
 
     def center_window(self):
         # Obtener el tamaño de la pantalla y el tamaño de la ventana
