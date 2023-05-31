@@ -19,10 +19,12 @@ class MainWindows(MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.thread = None
         
         # Setear el boton de render
         self.render_in_progress = False
         self.render_button.clicked.connect(self.renderizar)
+        self.button_stop.clicked.connect(self.renderizar)
 
         # Creamos el objeto QSoundEffect
         self.sound_effect = QSoundEffect()
@@ -217,9 +219,9 @@ class RenderThread(QtCore.QThread):
         for comando in self.command:
             count = 0
             with subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                universal_newlines=True) as proceso:
+                                universal_newlines=True) as self.proceso:
                 while True:
-                    linea = proceso.stdout.readline()
+                    linea = self.proceso.stdout.readline()
                     print(linea)
                     if not linea:
                         print('linea not')
@@ -278,7 +280,10 @@ class RenderThread(QtCore.QThread):
         # Cuando se llega aqui es por que el proceso de render terminó       
         self.finished.emit()
 
-
+    def stop(self):
+        if self.render_thread is not None and self.render_thread.is_alive():
+            self.render_thread.stop()
+            self.proceso.terminate()
 #################################################################################
 #ejecutable
 #################################################################################

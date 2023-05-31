@@ -97,13 +97,13 @@ class MainWindow(QMainWindow):
         self.nuke_dir.setToolTip('Ubicación del archivo ejecutable de Nuke')
         sub_division_layout1.addWidget(self.nuke_dir)
 
-        # label_1 = QLabel("label 1")
-        # label_1.setAlignment(Qt.AlignCenter)
-        # sub_division_layout2.addWidget(label_1)
+        button1 = QPushButton("Play")
+        button1.setStyleSheet("background-color: rgb(70, 80, 90);")
+        sub_division_layout2.addWidget(button1)
 
-        # button2 = QPushButton("Botón 2")
-        # button2.setStyleSheet("background-color: rgb(70, 80, 90);")
-        # sub_division_layout3.addWidget(button2)
+        self.button_stop = QPushButton("stop")
+        self.button_stop.setStyleSheet("background-color: rgb(70, 80, 90);")
+        sub_division_layout3.addWidget(self.button_stop)
 
         #para introducir el nombre del script
         self.input_write = QLineEdit()
