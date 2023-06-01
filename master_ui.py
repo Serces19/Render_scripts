@@ -47,42 +47,24 @@ class MainWindow(QMainWindow):
         sub_division_layout2 = QVBoxLayout()
         sub_division_layout3 = QVBoxLayout()
         sub_division_layout4 = QVBoxLayout()
-        sub_division_layout5 = QVBoxLayout()
-        sub_division_layout6 = QVBoxLayout()
-        sub_division_layout7 = QVBoxLayout()
-        sub_division_layout8 = QVBoxLayout()
-        sub_division_layout9 = QVBoxLayout()
-        sub_division_layout10 = QVBoxLayout()
-
-        #Crear las child subdivisions
-        child_sub_division_H_layout1 = QHBoxLayout()
 
         #-------------------------Agregar-------------------------------
-        #Agregar las child subdivisions a las subdivisiones
-        sub_division_layout7.addLayout(child_sub_division_H_layout1)
 
         # Agregar las divisiones secundarias a las divisiones principales
         division_H_layout1.addLayout(sub_division_layout1)
-        division_H_layout1.addLayout(sub_division_layout2)
-        division_H_layout1.addLayout(sub_division_layout3)
 
-        division_H_layout2.addLayout(sub_division_layout4)
+        division_H_layout2.addLayout(sub_division_layout2)
 
-        division_H_layout3.addLayout(sub_division_layout5)
+        division_H_layout6.addLayout(sub_division_layout3)
+        division_H_layout6.addLayout(sub_division_layout4)
 
-        division_H_layout4.addLayout(sub_division_layout6)
-        division_H_layout4.addLayout(sub_division_layout7)
-
-        division_H_layout5.addLayout(sub_division_layout8)
-
-        division_H_layout6.addLayout(sub_division_layout9)
-        division_H_layout6.addLayout(sub_division_layout10)
+        #Definir un espacio
+        spacer = QSpacerItem(0, 25, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         # Agregar las divisiones principales al layout principal
         layout.addLayout(division_H_layout1)
-        layout.addLayout(division_H_layout2)
-        spacer = QSpacerItem(0, 40, QSizePolicy.Expanding, QSizePolicy.Minimum)
         layout.addItem(spacer)
+        layout.addLayout(division_H_layout2)
         layout.addLayout(division_H_layout3)
         layout.addItem(spacer)
         layout.addLayout(division_H_layout4)
@@ -97,37 +79,28 @@ class MainWindow(QMainWindow):
         self.nuke_dir.setToolTip('Ubicación del archivo ejecutable de Nuke')
         sub_division_layout1.addWidget(self.nuke_dir)
 
-        button1 = QPushButton("Play")
-        button1.setStyleSheet("background-color: rgb(70, 80, 90);")
-        sub_division_layout2.addWidget(button1)
-
-        self.button_stop = QPushButton("stop")
-        self.button_stop.setStyleSheet("background-color: rgb(70, 80, 90);")
-        sub_division_layout3.addWidget(self.button_stop)
-
         #para introducir el nombre del script
         self.input_write = QLineEdit()
         self.input_write.setPlaceholderText('Write1')
         self.input_write.setToolTip('Nombre del Write a renderizar')
         self.input_write.setAlignment(Qt.AlignLeft)
-        sub_division_layout4.addWidget(self.input_write)
+        sub_division_layout1.addWidget(self.input_write)
+
+        # Poner logo aca
+        self.button_logo = QPushButton("LOGO LOCAZO")
+        self.button_logo.setStyleSheet("QPushButton { background-color: rgb(70, 80, 90); }"
+                                        "QPushButton:hover { background-color: rgb(130, 60, 60); }"
+                                        "QPushButton:pressed { background-color:rgb(180, 60, 60); }")
+        division_H_layout1.addWidget(self.button_logo)
         
         #etiqueta de la lista
         label_lista = QLabel("Arrastra los scripts a renderizar:")
         label_lista.setAlignment(Qt.AlignLeft)
-        sub_division_layout5.addWidget(label_lista)
+        sub_division_layout2.addWidget(label_lista)
 
         # Agregar la lista
         self.lista = FileListWidget(self)
-        sub_division_layout5.addWidget(self.lista)
-
-        # Agregar el boton de render
-        self.render_button = QPushButton("Render")
-        self.render_button.setStyleSheet("QPushButton { background-color: rgb(30, 120, 90); }"
-                     "QPushButton:hover { background-color: rgb(40, 130, 100); }"
-                     "QPushButton:pressed { background-color:rgb(10, 120, 120); }")
-
-        sub_division_layout6.addWidget(self.render_button)
+        sub_division_layout2.addWidget(self.lista)
 
         #Agregar botones de add
         add_button = QPushButton("+")
@@ -135,7 +108,7 @@ class MainWindow(QMainWindow):
                                 "QPushButton:pressed { background-color:rgb(50, 55, 70); }"
                                 "QPushButton { font-size: 18px; font-weight: bold; }")
         add_button.clicked.connect(self.lista.add_item)
-        child_sub_division_H_layout1.addWidget(add_button)
+        division_H_layout3.addWidget(add_button)
 
         #Agregar botones de eliminar 
         remove_button = QPushButton("-")
@@ -143,7 +116,26 @@ class MainWindow(QMainWindow):
         remove_button.setStyleSheet("QPushButton:hover { background-color: rgb(40, 45, 60); }"
                                     "QPushButton:pressed { background-color:rgb(50, 55, 70); }"
                                     "QPushButton { font-size: 18px; font-weight: bold; }")
-        child_sub_division_H_layout1.addWidget(remove_button)
+        division_H_layout3.addWidget(remove_button)
+        
+        #boton para cargar datos de la DB
+        button1 = QPushButton("Cargar DB")
+        button1.setStyleSheet("background-color: rgb(70, 80, 90);")
+        division_H_layout3.addWidget(button1)
+
+        # Agregar el boton de render
+        self.render_button = QPushButton("Render")
+        self.render_button.setStyleSheet("QPushButton { background-color: rgb(30, 120, 90); }"
+                     "QPushButton:hover { background-color: rgb(40, 150, 100); }"
+                     "QPushButton:pressed { background-color:rgb(10, 150, 120); }")
+        division_H_layout4.addWidget(self.render_button)
+
+        # Boton de stop
+        self.button_stop = QPushButton("Stop")
+        self.button_stop.setStyleSheet("QPushButton { background-color: rgb(70, 80, 90); }"
+                                        "QPushButton:hover { background-color: rgb(100, 60, 60); }"
+                                        "QPushButton:pressed { background-color:rgb(120, 60, 60); }")
+        division_H_layout4.addWidget(self.button_stop)
 
         # Agregar la barra de progreso
         self.progressBar = QProgressBar()
@@ -155,28 +147,28 @@ class MainWindow(QMainWindow):
         """
         self.progressBar.setStyleSheet(style)
         self.progressBar.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
-        sub_division_layout8.addWidget(self.progressBar)
+        division_H_layout5.addWidget(self.progressBar)
 
         #Label del status
         self.status = QLabel("Status:")
         self.status.setAlignment(Qt.AlignLeft)
-        sub_division_layout9.addWidget(self.status)
+        sub_division_layout3.addWidget(self.status)
 
         #Label de la descripcion del render
         self.descripcion = QLabel("-")
         self.descripcion.setAlignment(Qt.AlignLeft)
         self.descripcion.setStyleSheet("font-size: 7pt; color: rgb(90, 90, 90);")
-        sub_division_layout9.addWidget(self.descripcion)
+        sub_division_layout3.addWidget(self.descripcion)
 
         #Label del tiempo total de render
         self.tiempo = QLabel("Tiempo:")
         self.tiempo.setAlignment(Qt.AlignLeft)
-        sub_division_layout10.addWidget(self.tiempo)
+        sub_division_layout4.addWidget(self.tiempo)
 
         #Label del tiempo estimado de render
         self.tiempo_restante = QLabel("-")
         self.tiempo_restante.setAlignment(Qt.AlignLeft)
-        sub_division_layout10.addWidget(self.tiempo_restante)
+        sub_division_layout4.addWidget(self.tiempo_restante)
 
 
     def center_window(self):

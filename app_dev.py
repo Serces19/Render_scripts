@@ -20,11 +20,12 @@ class MainWindows(MainWindow):
         super().__init__()
         self.setupUi(self)
         self.thread = None
+        self.stop_rendering = False
         
         # Setear el boton de render
         self.render_in_progress = False
         self.render_button.clicked.connect(self.renderizar)
-        self.button_stop.clicked.connect(self.renderizar)
+        self.button_stop.clicked.connect(self.stop_render)
 
         # Creamos el objeto QSoundEffect
         self.sound_effect = QSoundEffect()
@@ -145,6 +146,16 @@ quit()
         self.timer.start(1000)  # Actualiza cada segundo (1000 ms)
         self.start_time = QTime.currentTime()
 
+    def stop_render(self):
+        if self.thread:
+            self.thread.stop_rendering = True  # Establecer la variable de detención en True
+            self.thread.wait()  # Esperar a que el hilo de renderizado termine
+            self.thread = None  # Limpiar la instancia del hilo
+            self.render_button.setEnabled(True)  # Habilitar el botón de renderizado
+            self.render_in_progress = False  # Establecer el indicador de renderizado en progreso en False
+            self.tiempo_restante.setText('-')
+            self.status.setText("Render detenido")
+
     def not_node(self):
         self.show_message_box('El nodo no existe')
         return
@@ -208,6 +219,7 @@ class RenderThread(QtCore.QThread):
 
     def __init__(self):
         super().__init__()
+        self.stop_rendering = False
 
     def start_rendering(self, instrucciones):
         self.command = instrucciones
@@ -221,6 +233,9 @@ class RenderThread(QtCore.QThread):
             with subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 universal_newlines=True) as self.proceso:
                 while True:
+                    print(self.stop_rendering)
+                    if self.stop_rendering:  # Comprobar si se debe detener el renderizado
+                        break
                     linea = self.proceso.stdout.readline()
                     print(linea)
                     if not linea:
@@ -278,7 +293,8 @@ class RenderThread(QtCore.QThread):
                     self.tiempo.emit(tiempo)
                     
         # Cuando se llega aqui es por que el proceso de render terminó       
-        self.finished.emit()
+        if self.stop_rendering:
+            self.finished.emit()
 
     def stop(self):
         if self.render_thread is not None and self.render_thread.is_alive():
