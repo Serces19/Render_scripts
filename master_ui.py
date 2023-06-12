@@ -1,10 +1,10 @@
-import sys
-from PySide2.QtWidgets import *
-from PySide2.QtGui import *
-from PySide2.QtCore import *
-from PySide2 import *
-from PySide2.QtGui import QColor, QPalette
+from PySide2.QtWidgets import QApplication, QMainWindow, QListWidget, QStyledItemDelegate, QVBoxLayout, QWidget
+from PySide2.QtWidgets import QLineEdit, QLabel, QAbstractItemView, QListView, QPushButton, QCheckBox, QProgressBar
+from PySide2.QtWidgets import QHBoxLayout, QSpacerItem, QSizePolicy, QListWidgetItem
+from PySide2.QtGui import QIcon, QColor
 from PySide2.QtCore import Qt
+
+from controladores.db import manager_db
 
 
 ################################################################################
@@ -14,11 +14,16 @@ from PySide2.QtCore import Qt
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
+        # # self.setWindowFlags(Qt.FramelessWindowHint)
+        # self.setAttribute(Qt.WA_TranslucentBackground)
     
     def setupUi(self, Nuke_Render):
         if not Nuke_Render.objectName():
-            Nuke_Render.setObjectName("Nuke Render")
+            Nuke_Render.setObjectName("Render all!")
 
+        # Establecer el ícono de la ventana
+        icon = QIcon("E:/Code/Render/recursos/logo_s.png")
+        self.setWindowIcon(icon)
         self.setWindowTitle("Nuke render")
         self.setGeometry(100, 100, 1000, 1000)  # Definir posición y tamaño de la ventana
         self.setStyleSheet(u"background-color: rgb(20, 25, 35);\n"
@@ -76,25 +81,38 @@ class MainWindow(QMainWindow):
         # Crear botones y asignar colores de fondo y estilo redondeado
         self.nuke_dir = QLineEdit()
         self.nuke_dir.setPlaceholderText(r'C:\Program Files\Nuke14.0v4\Nuke14.0.exe')
-        self.nuke_dir.setToolTip('Ubicación del archivo ejecutable de Nuke')
+        self.nuke_dir.setToolTip('Nuke executable file location')
         sub_division_layout1.addWidget(self.nuke_dir)
 
         #para introducir el nombre del script
         self.input_write = QLineEdit()
         self.input_write.setPlaceholderText('Write1')
-        self.input_write.setToolTip('Nombre del Write a renderizar')
+        self.input_write.setToolTip('Name of the Write node to render')
         self.input_write.setAlignment(Qt.AlignLeft)
         sub_division_layout1.addWidget(self.input_write)
 
-        # Poner logo aca
-        self.button_logo = QPushButton("LOGO LOCAZO")
-        self.button_logo.setStyleSheet("QPushButton { background-color: rgb(70, 80, 90); }"
-                                        "QPushButton:hover { background-color: rgb(130, 60, 60); }"
-                                        "QPushButton:pressed { background-color:rgb(180, 60, 60); }")
-        division_H_layout1.addWidget(self.button_logo)
+        # # Poner logo aca
+        # self.button_logo = QPushButton("LOGO")
+        # self.button_logo.setStyleSheet("QPushButton { background-color: rgb(70, 80, 90); }"
+        #                                 "QPushButton:hover { background-color: rgb(130, 60, 60); }"
+        #                                 "QPushButton:pressed { background-color:rgb(180, 60, 60); }")
+        # division_H_layout1.addWidget(self.button_logo)
+
+
+        # # Cargar la imagen del logo
+        # logo_pixmap = QPixmap('recursos/logo.png')
+
+        # # Crear un QLabel y establecer la imagen como su contenido
+        # logo_label = QLabel(self)
+        # logo_label.setPixmap(logo_pixmap)
+        # logo_label.setMaximumSize(200*0.5, 230*0.5)
+        # logo_label.setAlignment(Qt.AlignCenter)
+        # logo_label.setGeometry(0, 0, 250, 250)
+        # logo_label.setScaledContents(True)
+        # division_H_layout1.addWidget(logo_label)
         
         #etiqueta de la lista
-        label_lista = QLabel("Arrastra los scripts a renderizar:")
+        label_lista = QLabel("Drag scripts to render:")
         label_lista.setAlignment(Qt.AlignLeft)
         sub_division_layout2.addWidget(label_lista)
 
@@ -103,12 +121,12 @@ class MainWindow(QMainWindow):
         sub_division_layout2.addWidget(self.lista)
 
         #Agregar botones de add
-        add_button = QPushButton("+")
-        add_button.setStyleSheet("QPushButton:hover { background-color: rgb(40, 45, 60); }"
+        self.add_button = QPushButton("+")
+        self.add_button.clicked.connect(self.agregar_archivo)
+        self.add_button.setStyleSheet("QPushButton:hover { background-color: rgb(40, 45, 60); }"
                                 "QPushButton:pressed { background-color:rgb(50, 55, 70); }"
                                 "QPushButton { font-size: 18px; font-weight: bold; }")
-        add_button.clicked.connect(self.lista.add_item)
-        division_H_layout3.addWidget(add_button)
+        division_H_layout3.addWidget(self.add_button)
 
         #Agregar botones de eliminar 
         remove_button = QPushButton("-")
@@ -119,23 +137,31 @@ class MainWindow(QMainWindow):
         division_H_layout3.addWidget(remove_button)
         
         #boton para cargar datos de la DB
-        button1 = QPushButton("Cargar DB")
-        button1.setStyleSheet("background-color: rgb(70, 80, 90);")
-        division_H_layout3.addWidget(button1)
+        self.load_db = QPushButton("Load from DB")
+        self.load_db.clicked.connect(self.load_from_db)
+        self.load_db.setStyleSheet("QPushButton:hover { background-color: rgb(70, 80, 90); }"
+                                "QPushButton:pressed { background-color:rgb(50, 55, 70); }"
+                                "QPushButton { font-size: 18px; font-weight: bold; }")
+        division_H_layout3.addWidget(self.load_db)
 
         # Agregar el boton de render
         self.render_button = QPushButton("Render")
         self.render_button.setStyleSheet("QPushButton { background-color: rgb(30, 120, 90); }"
                      "QPushButton:hover { background-color: rgb(40, 150, 100); }"
-                     "QPushButton:pressed { background-color:rgb(10, 150, 120); }")
+                     "QPushButton:pressed { background-color:rgb(10, 150, 120); }"
+                     "QPushButton { font-size: 18px; font-weight: bold; }")
         division_H_layout4.addWidget(self.render_button)
 
         # Boton de stop
         self.button_stop = QPushButton("Stop")
         self.button_stop.setStyleSheet("QPushButton { background-color: rgb(70, 80, 90); }"
                                         "QPushButton:hover { background-color: rgb(100, 60, 60); }"
-                                        "QPushButton:pressed { background-color:rgb(120, 60, 60); }")
+                                        "QPushButton:pressed { background-color:rgb(120, 60, 60); }"
+                                        "QPushButton { font-size: 18px; font-weight: bold; }")
         division_H_layout4.addWidget(self.button_stop)
+
+        self.checkbox = QCheckBox('Shutdown after render')
+        division_H_layout4.addWidget(self.checkbox)
 
         # Agregar la barra de progreso
         self.progressBar = QProgressBar()
@@ -161,7 +187,7 @@ class MainWindow(QMainWindow):
         sub_division_layout3.addWidget(self.descripcion)
 
         #Label del tiempo total de render
-        self.tiempo = QLabel("Tiempo:")
+        self.tiempo = QLabel("Render time:")
         self.tiempo.setAlignment(Qt.AlignLeft)
         sub_division_layout4.addWidget(self.tiempo)
 
@@ -182,6 +208,28 @@ class MainWindow(QMainWindow):
 
         # Establecer la posición de la ventana
         self.move(center_x, center_y)
+
+    def agregar_archivo(self):
+        # Abrir el explorador de archivos y obtener la ubicación del archivo seleccionado
+        file_dialog = QFileDialog()
+        archivo_seleccionado, _ = file_dialog.getOpenFileName(self, 'Select File', '', 'Nuke script (*.nk)')
+
+        if archivo_seleccionado:
+            # Agregar el archivo a la QListWidget
+            item = QListWidgetItem(archivo_seleccionado)
+            self.lista.addItem(item)
+
+    def load_from_db(self):
+        db = manager_db()
+        resultado = db.leer_datos()
+        
+        if len(resultado) > 0:
+            for item in resultado:
+                # Agregar el archivo a la QListWidget
+                self.lista.addItem(item)
+        else:
+            print('No elements in DB')
+            return
 
 
 ############################################################
@@ -212,7 +260,7 @@ class FileListWidget(QListWidget):
                 self.addItem(item)
 
     def add_item(self):
-        new_item_text = "Elemento {}".format(self.count() + 1)
+        new_item_text = "Element {}".format(self.count() + 1)
         self.addItem(new_item_text)
 
     def remove_item(self):
@@ -231,7 +279,15 @@ class AlternatingColorDelegate(QStyledItemDelegate):
         else:
             option.backgroundBrush = QColor(25, 35, 45)  # Color para filas impares
 
+##########################################
+###Interfaz transparente
 
+    # def paintEvent(self, event):
+    #     painter = QPainter(self)
+    #     painter.setRenderHint(QPainter.Antialiasing)
+    #     painter.setPen(Qt.NoPen)
+    #     painter.setBrush(QColor(255, 255, 255, 200))
+    #     painter.drawRoundedRect(self.rect(), 10, 10)
 
 ################################################################################
 # ejecutar

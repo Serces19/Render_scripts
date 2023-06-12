@@ -3,12 +3,13 @@ import os
 import sys
 import time
 import re
+
 from PySide2.QtMultimedia import QSoundEffect
-from PySide2.QtWidgets import *
+from PySide2.QtWidgets import QApplication
 from PySide2 import QtCore
 from PySide2.QtCore import QTimer, QTime, QUrl
-from master_ui import *
 
+from master_ui import MainWindow
 
 
 ##################################################################################
@@ -38,7 +39,9 @@ class MainWindows(MainWindow):
         elif sys.platform.startswith('linux'):
             self.sound_effect.setSource(QUrl.fromLocalFile('/usr/share/sounds/freedesktop/stereo/complete.oga'))
 
+    
     def renderizar(self):
+        self.render_parado = False
         # Si el render esta en progreso no se ejecuta el resto
         if self.render_in_progress:
             return
@@ -56,7 +59,7 @@ class MainWindows(MainWindow):
 
         # Si la ubicacion del archivo de nuke no es real se lanza un mensaje de alerta  
         if not os.path.exists(self.nuke_executable):
-            self.show_message_box('La ubicacion de Nuke es incorrecta')
+            self.show_message_box('nuke.exe location is wrong')
             return
         
         # Se agregan comillas dobles para evitar problemas
@@ -137,7 +140,7 @@ quit()
         #Se establece el status como render in progress
         self.render_button.setEnabled(False)  # Deshabilitar el botón de renderizado
         self.render_in_progress = True  # Establecer el indicador de renderizado en progreso
-        self.status.setText("Comenzando") #Establece el texto que va debajo de la barra de progreso
+        self.status.setText("Starting") #Establece el texto que va debajo de la barra de progreso
         self.progressBar.setValue(0)
 
         #comienza a contar los miniutos
@@ -149,28 +152,29 @@ quit()
     def stop_render(self):
         if self.thread:
             self.thread.stop_rendering = True  # Establecer la variable de detención en True
+            self.render_parado = True
             self.thread.wait()  # Esperar a que el hilo de renderizado termine
             self.thread = None  # Limpiar la instancia del hilo
             self.render_button.setEnabled(True)  # Habilitar el botón de renderizado
             self.render_in_progress = False  # Establecer el indicador de renderizado en progreso en False
             self.tiempo_restante.setText('-')
-            self.status.setText("Render detenido")
+            self.status.setText("Render stop")
 
     def not_node(self):
-        self.show_message_box('El nodo no existe')
+        self.show_message_box('The node not exist')
         return
 
     def show_message_box(self, mensaje):
         msg_box = QMessageBox()
         msg_box.setIcon(QMessageBox.Warning)
-        msg_box.setWindowTitle('¡Advertencia!')
+        msg_box.setWindowTitle('Warning!')
         msg_box.setText(mensaje)
         msg_box.setStandardButtons(QMessageBox.Ok)
         msg_box.exec_()
 
     #Actualiza el nombre del archivo de nuke que se esta renderizando
     def update_shot(self, current_shot):
-        self.status.setText(f'Renderizando: {current_shot}')
+        self.status.setText(f'Rendering: {current_shot}')
 
     #Actualiza la barra de progresso durante el render
     def update_progress(self, progress):
@@ -184,27 +188,51 @@ quit()
     def update_rest_time(self, tiempo_restante):
         tiempo_restante = round(abs(tiempo_restante), 1)
         tiempo_restante = str(tiempo_restante)
-        self.tiempo_restante.setText(f'Tiempo restante: {tiempo_restante}')
+        self.tiempo_restante.setText(f'Time left: {tiempo_restante}')
 
     #Se activa una vez el render haya terminado
     def rendering_finished(self):
         self.timer.stop()
-        self.status.setText("Render finalizado")
+        self.status.setText("Render completed")
         self.render_button.setEnabled(True)  # Habilitar el botón de renderizado
         self.render_in_progress = False  # Establecer el indicador de renderizado en progreso en False
         self.tiempo_restante.setText('-')
         self.play_sound()
+        if self.checkbox.isChecked() and self.render_parado is False:
+            self.autoapagado()
+
     
     # Actualizar tiempo total de render
     def update_time(self):
         current_time = QTime.currentTime()
         elapsed_seconds = self.start_time.secsTo(current_time)
-        self.tiempo.setText(f"tiempo de render: {elapsed_seconds}")
+        self.tiempo.setText(f"Render time: {elapsed_seconds}")
 
 
     def play_sound(self):
         # Reproducir el sonido
         self.sound_effect.play()
+
+    def autoapagado(self):
+        apa_box = QMessageBox()
+        apa_box.setIcon(QMessageBox.Warning)
+        apa_box.setWindowTitle('Warning!')
+        apa_box.setText('It will shutdown in 10 minutes.')
+        apa_box.setStandardButtons(QMessageBox.Cancel)
+        
+        # Realizar el apagado
+        comando_apagado = "shutdown /s /t 600"
+        os.system(comando_apagado)
+
+        # Lanzar la ventana de advertencia
+        result = apa_box.exec_()
+
+        # Si se presiona el botón Cancelar
+        if result == QMessageBox.Cancel:
+            # Cancelar el apagado
+            os.system("shutdown /a")
+
+
 ##################################################################################
 
 
